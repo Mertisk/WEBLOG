@@ -1,9 +1,9 @@
 ﻿using BusinessLayer.Concrete;
 using BusinessLayer.ValidationRules;
+using DataAccsessLayer.Concrete;
 using DataAccsessLayer.EntityFramework;
 using EntityLayer.Concrete;
 using FluentValidation.Results;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System;
@@ -12,13 +12,14 @@ using System.Linq;
 
 namespace CoreDemo.Controllers
 {
-    [AllowAnonymous] //bu alanda kısıtlama yok
+    //[AllowAnonymous] bu alanda kısıtlama yok
     public class BlogController : Controller
     {
         BlogManager bm = new BlogManager(new EfBlogRepository());
 
         CategoryManager cm = new CategoryManager(new EfCategoryRepository());
 
+        Context c = new Context();
 
         public IActionResult Index()
         {
@@ -34,14 +35,17 @@ namespace CoreDemo.Controllers
 
         public IActionResult BlogListByWriter()
         {
-            var values = bm.GetBlogListWithCategory().Where(x => x.WriterID == 1).ToList();
+
+
+
+            var userMail = User.Identity.Name;
+            var writerID = c.Writers.Where(x => x.WriterMail == userMail).Select(y => y.WriterID).FirstOrDefault();
+            var values = bm.GetBlogListWithCategory().Where(x => x.WriterID == writerID).ToList();
             return View(values);
         }
-        [HttpGet]
-        public IActionResult BlogAdd()
+
+        private void PopulateCategoriesInViewBag()
         {
-
-
             List<SelectListItem> categoryvalues = (from x in cm.GetList()
                                                    select new SelectListItem
                                                    {
@@ -49,37 +53,53 @@ namespace CoreDemo.Controllers
                                                        Value = x.CategoryID.ToString()
                                                    }).ToList();
             ViewBag.cv = categoryvalues;
+        }
+
+
+
+        [HttpGet]
+        public IActionResult BlogAdd()
+        {
+
+
+            //List<SelectListItem> categoryvalues = (from x in cm.GetList()
+            //                                       select new SelectListItem
+            //                                       {
+            //                                           Text = x.CategoryName,
+            //                                           Value = x.CategoryID.ToString()
+            //                                       }).ToList();
+            //ViewBag.cv = categoryvalues;
+            PopulateCategoriesInViewBag();
             return View();
         }
         [HttpPost]
         public IActionResult BlogAdd(Blog p)
         {
             BlogValidator bv = new BlogValidator();
-
             ValidationResult results = bv.Validate(p);
+
+            var userMail = User.Identity.Name;
+            var writerID = c.Writers.Where(x => x.WriterMail == userMail).Select(y => y.WriterID).FirstOrDefault();
 
             if (results.IsValid)
             {
                 p.BlogStatus = true;
                 p.BlogCreateDate = DateTime.Parse(DateTime.Now.ToShortDateString());
-                p.WriterID = 1;
+                p.WriterID = writerID;
                 bm.TAdd(p);
-
 
                 return RedirectToAction("BlogListByWriter", "Blog");
             }
             else
             {
+                PopulateCategoriesInViewBag();
                 foreach (var item in results.Errors)
                 {
                     ModelState.AddModelError(item.PropertyName, item.ErrorMessage);
-                    //modelstate= model durumu 
                 }
             }
 
-
             return View();
-
         }
 
         public IActionResult DeleteBlog(int id)
@@ -108,6 +128,11 @@ namespace CoreDemo.Controllers
         [HttpPost]
         public IActionResult EditBlog(Blog p)
         {
+            var userMail = User.Identity.Name;
+            var writerID = c.Writers.Where(x => x.WriterMail == userMail).Select(y => y.WriterID).FirstOrDefault();
+            p.WriterID = writerID;
+            p.BlogCreateDate = DateTime.Parse(DateTime.Now.ToShortDateString());
+            p.BlogStatus = true;
             bm.TUpdate(p);
             return RedirectToAction("BlogListByWriter");
         }

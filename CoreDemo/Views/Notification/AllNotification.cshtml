@@ -1,0 +1,71 @@
+﻿
+@using EntityLayer.Concrete
+
+@model List<Notification>
+
+@{
+    ViewData["Title"] = "AllNotification";
+    Layout = "~/Views/Shared/WriterLayout.cshtml";
+}
+
+@{//chatgbt yazdı
+    // Mesajın gönderildiği tarihten şuanki zamanı çıkararak geçen süreyi hesaplamak için bir yardımcı metot
+    Func<DateTime, string> CalculateTimeDifference = (messageDate) =>
+    {
+        TimeSpan timeDifference = DateTime.Now - messageDate;
+
+        if (timeDifference.TotalSeconds < 60)
+        {
+            return $"{(int)timeDifference.TotalSeconds} saniye önce";
+        }
+        else if (timeDifference.TotalMinutes < 60)
+        {
+            return $"{(int)timeDifference.TotalMinutes} dakika önce";
+        }
+        else if (timeDifference.TotalHours < 24)
+        {
+            return $"{(int)timeDifference.TotalHours} saat önce";
+        }
+        else if (timeDifference.TotalDays < 365)
+        {
+            return $"{(int)timeDifference.TotalDays} gün önce";
+        }
+        else
+        {
+            int years = (int)(timeDifference.TotalDays / 365);
+            return $"{years} yıl önce";
+        }
+    };
+}
+
+<h1>Bildirimler</h1>
+
+
+<table class="table table-bordered">
+    <tr>
+        <th>
+            #
+        </th>
+        <th>
+            Bildirim
+        </th>
+        <th>
+            Tarih
+        </th>
+    </tr>
+    @foreach (var item in Model)
+    {
+        <tr>
+            <td>
+                @item.NotificationID
+            </td>
+            <td>
+                @item.NotificationDetails
+            </td>
+            <td>
+                @CalculateTimeDifference(item.NotificationDate)
+            </td>
+        </tr>
+    }
+</table>
+

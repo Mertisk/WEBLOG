@@ -1,5 +1,4 @@
 ﻿using DataAccsessLayer.Concrete;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 
@@ -7,7 +6,6 @@ namespace CoreDemo.Controllers
 {
     public class DashboardController : Controller
     {
-        [AllowAnonymous]
         public IActionResult Index()
         {
 
